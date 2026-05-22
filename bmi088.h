@@ -1,7 +1,7 @@
 #ifndef BMI088_H
 #define BMI088_H
 
-#include <stdint.h>
+#include <stm32f4xx_hal.h>
 uint8_t BMI088_Init(void);
 
 

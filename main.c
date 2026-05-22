@@ -34,6 +34,7 @@ HighPass_data HighPassGyro;
 Kalman_data KalmanRoll;
 Kalman_data KalmanPitch;
 Telemetri_data Telem_1;
+Telemetri_data Gelen_Telem;
 volatile uint8_t uart_ready = 1;
 /* USER CODE END PTD */
 
@@ -53,6 +54,7 @@ DMA_HandleTypeDef hdma_i2c1_rx;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -111,8 +113,9 @@ int main(void)
 	  Kalman_MPU_Values(&KalmanPitch);
 	  MPU_ivme_Filte_Init(&LowPassIvme);
 	  MPU_Gyro_Filte_Init(&HighPassGyro);
-	  DMA_calis_i2c(&MPU_1);
+	  DMA_calis_i2c(&MPU_1);//nvic 2 ayar da enable olacak
   }
+  HAL_UART_Receive_DMA(&huart1, (uint8_t*)&Gelen_Telem, sizeof(Telemetri_data));//nvic 1.ayar enable olacak
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -131,17 +134,15 @@ int main(void)
 		  float accPitch = atan2f(-MPU_1.Accel_X_g_filtreli, sqrtf(MPU_1.Accel_Y_g_filtreli * MPU_1.Accel_Y_g_filtreli + MPU_1.Accel_Z_g_filtreli * MPU_1.Accel_Z_g_filtreli)) * 57.29577f;
 		  MPU_1.Roll = MPU_kalman(&KalmanRoll, accRoll, MPU_1.Gyro_X_deg, 0.01f);
 		  MPU_1.Pitch = MPU_kalman(&KalmanPitch, accPitch, MPU_1.Gyro_Y_deg, 0.01f);
-/*
-		  Telem_1.paket_no = 1;
-		  Telem_1.roket_pitch = MPU_1.Pitch;
-		  Telem_1.roket_roll = MPU_1.Roll;
-		  Telem_1.roket_totalAngle = MPU_1.total_angle;
-*/
-		  //LoRa_Gonder((uint8_t*)&Telem_1, sizeof(Telemetri_data));
+
+		  if(uart_ready == 1){
+			  	  Lora_Gonder(&huart1, &Telem_1, &MPU_1);
+			      uart_ready = 0;
+		  }
 		  DMA_calis_i2c(&MPU_1);
 		  MPU_Total_Angle(&MPU_1);
 
-}
+	  }
 
 
   }
@@ -275,6 +276,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
   /* DMA2_Stream7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
@@ -317,6 +321,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     	uart_ready = 1;
     }
 }
+
 /* USER CODE END 4 */
 
 /**

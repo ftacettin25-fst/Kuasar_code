@@ -13,7 +13,7 @@ uint8_t MPU_init(MPU6050_data *sensor)
 	HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR, 0x75, 1, &a, 1, 100);
 	sensor->DataReady = 0;
 
-	if (a == 0x68){
+	if (a == 0x68 || a == 0x70){
 		HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDR, 0x6B, 1, &data, 1, 100);
 		return 1;
 		}
@@ -25,8 +25,14 @@ uint8_t MPU_init(MPU6050_data *sensor)
 
 void DMA_calis_i2c(MPU6050_data *sensor)
 {
-	sensor->DataReady = 0;
-	HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR, 0x3B, 1, sensor->RxBuffer, 14);
+    sensor->DataReady = 0;
+    HAL_StatusTypeDef status;
+
+    status = HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR, 0x3B, 1, sensor->RxBuffer, 14);
+
+    if(status == HAL_BUSY) {
+        __NOP();
+    }
 }
 
 void MPU_data_isle(MPU6050_data *sensor){
@@ -44,7 +50,7 @@ void MPU_data_isle(MPU6050_data *sensor){
 	sensor->Accel_Z_g = Accel_Z_RAW / 16384.0f;
 	sensor->Gyro_X_deg = Gyro_X_RAW / 131.0f;
 	sensor->Gyro_Y_deg = Gyro_Y_RAW / 131.0f;
-	sensor->Gyro_Z_deg = Gyro_Z_RAW / 131;
+	sensor->Gyro_Z_deg = Gyro_Z_RAW / 131.0f;
 
 }
 
@@ -65,9 +71,9 @@ void MPU_ivme_Filte(MPU6050_data *sensor, LowPass_data *lp){
 	sensor->Accel_Y_g_filtreli = (sensor->Accel_Y_g * lp->alpha) + ((1-lp->alpha) * lp->oncekiY);
 	sensor->Accel_Z_g_filtreli = (sensor->Accel_Z_g * lp->alpha) + ((1-lp->alpha) * lp->oncekiZ);
 
-	lp->oncekiX = sensor->Gyro_X_deg_filtreli;
-	lp->oncekiY = sensor->Gyro_Y_deg_filtreli;
-	lp->oncekiZ = sensor->Gyro_Z_deg_filtreli;
+	lp->oncekiX = sensor->Accel_X_g_filtreli;
+	lp->oncekiY = sensor->Accel_Y_g_filtreli;
+	lp->oncekiZ = sensor->Accel_Z_g_filtreli;
 }
 
 void MPU_Gyro_Filte_Init(HighPass_data *hp){
@@ -152,14 +158,4 @@ void MPU_Total_Angle(MPU6050_data *myMPU){
 	//formulu kontrol et degisebilir
 }
 
-void LoRa_Gonder(uint8_t *packetData, uint16_t packetSize){
-	uint16_t time = 5000;
 
-	while ( (HAL_GPIO_ReadPin(Lora_AUX_Port, Lora_AUX_Pin) == GPIO_PIN_RESET || !uart_ready) && time > 0 )
-		time--;
-
-	uart_ready = 0;
-	HAL_UART_Transmit_DMA(&huart1, packetData, packetSize);
-
-
-}

@@ -23,7 +23,7 @@ uint8_t MPU_init(MPU6050_data *sensor)
 
 }
 
-void DMA_calis(MPU6050_data *sensor)
+void DMA_calis_i2c(MPU6050_data *sensor)
 {
 	sensor->DataReady = 0;
 	HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR, 0x3B, 1, sensor->RxBuffer, 14);

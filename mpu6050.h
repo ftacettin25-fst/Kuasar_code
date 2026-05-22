@@ -67,9 +67,17 @@ typedef struct{
 
 uint8_t MPU_init(MPU6050_data *sensor);
 
-void DMA_calis(MPU6050_data *sensor);
+void DMA_calis_i2c(MPU6050_data *sensor);
 
 void MPU_data_isle(MPU6050_data *sensor);
+
+void MPU_ivme_Filte_Init(LowPass_data *lp);
+
+void MPU_ivme_Filte(MPU6050_data *sensor, LowPass_data *lp);
+
+void MPU_Gyro_Filte_Init(HighPass_data *hp);
+
+void MPU_Gyro_Filte(MPU6050_data *sensor, HighPass_data *hp);
 
 void Kalman_MPU_Values(Kalman_data *Kalman);
 

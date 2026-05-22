@@ -30,6 +30,7 @@
 /* USER CODE BEGIN PTD */
 MPU6050_data MPU_1;
 LowPass_data LowPassIvme;
+HighPass_data HighPassGyro;
 Kalman_data KalmanRoll;
 Kalman_data KalmanPitch;
 Telemetri_data Telem_1;
@@ -108,8 +109,9 @@ int main(void)
   if (MPU_init(&MPU_1) == 1) {
 	  Kalman_MPU_Values(&KalmanRoll);
 	  Kalman_MPU_Values(&KalmanPitch);
-
-	  DMA_calis(&MPU_1);
+	  MPU_ivme_Filte_Init(&LowPassIvme);
+	  MPU_Gyro_Filte_Init(&HighPassGyro);
+	  DMA_calis_i2c(&MPU_1);
   }
   /* USER CODE END 2 */
 
@@ -123,23 +125,24 @@ int main(void)
 	  if(MPU_1.DataReady == 1)
 	  {
 		  MPU_data_isle(&MPU_1);
+		  MPU_ivme_Filte(&MPU_1, &LowPassIvme);
+		  MPU_Gyro_Filte(&MPU_1, &HighPassGyro);
 		  float accRoll  = atan2f(MPU_1.Accel_Y_g_filtreli, MPU_1.Accel_Z_g_filtreli) * 57.29577f;
 		  float accPitch = atan2f(-MPU_1.Accel_X_g_filtreli, sqrtf(MPU_1.Accel_Y_g_filtreli * MPU_1.Accel_Y_g_filtreli + MPU_1.Accel_Z_g_filtreli * MPU_1.Accel_Z_g_filtreli)) * 57.29577f;
-		  MPU_1.Roll = MPU_kalman(&KalmanRoll, accRoll, MPU_1.Gyro_X_deg_filtreli, 0.01f);
-		  MPU_1.Pitch = MPU_kalman(&KalmanPitch, accPitch, MPU_1.Gyro_Y_deg_filtreli, 0.01f);
-
+		  MPU_1.Roll = MPU_kalman(&KalmanRoll, accRoll, MPU_1.Gyro_X_deg, 0.01f);
+		  MPU_1.Pitch = MPU_kalman(&KalmanPitch, accPitch, MPU_1.Gyro_Y_deg, 0.01f);
+/*
 		  Telem_1.paket_no = 1;
 		  Telem_1.roket_pitch = MPU_1.Pitch;
 		  Telem_1.roket_roll = MPU_1.Roll;
 		  Telem_1.roket_totalAngle = MPU_1.total_angle;
-
-		  LoRa_Gonder((uint8_t*)&Telem_1, sizeof(Telemetri_data));
-		  DMA_calis(&MPU_1);
+*/
+		  //LoRa_Gonder((uint8_t*)&Telem_1, sizeof(Telemetri_data));
+		  DMA_calis_i2c(&MPU_1);
+		  MPU_Total_Angle(&MPU_1);
 
 }
-	  MPU_Total_Angle(&MPU_1);
 
-	  HAL_Delay(10);
 
   }
   /* USER CODE END 3 */
@@ -302,7 +305,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-    if (hi2c->Instance == I2C2) {
+    if (hi2c->Instance == I2C1) {
     	MPU_1.DataReady = 1;
     }
 }

@@ -9,7 +9,7 @@
 
 
 typedef struct {
-    uint8_t RxBuffer[14];
+	volatile uint8_t RxBuffer[14];
 
     volatile uint8_t DataReady;
 
@@ -85,8 +85,7 @@ float MPU_kalman(Kalman_data *Kalman, float ham_angle, float ham_rate, float dt)
 
 void MPU_Total_Angle(MPU6050_data *myMPU);
 
-void LoRa_Gonder(uint8_t *packetData, uint16_t packetSize);
-
+void Lora_Gonder(UART_HandleTypeDef *huart, Telemetri_data *telem, MPU6050_data *sensor);
 
 
 #endif

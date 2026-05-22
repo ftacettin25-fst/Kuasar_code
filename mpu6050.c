@@ -28,7 +28,7 @@ void DMA_calis_i2c(MPU6050_data *sensor)
     sensor->DataReady = 0;
     HAL_StatusTypeDef status;
 
-    status = HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR, 0x3B, 1, sensor->RxBuffer, 14);
+    status = HAL_I2C_Mem_Read_DMA(&hi2c1, MPU6050_ADDR, 0x3B, 1, (uint8_t*)sensor->RxBuffer, 14);
 
     if(status == HAL_BUSY) {
         __NOP();
@@ -158,4 +158,11 @@ void MPU_Total_Angle(MPU6050_data *myMPU){
 	//formulu kontrol et degisebilir
 }
 
-
+void Lora_Gonder(UART_HandleTypeDef *huart, Telemetri_data *telem, MPU6050_data *sensor)
+{
+    telem->paket_no++;
+    telem->roket_pitch = sensor->Pitch;
+    telem->roket_roll = sensor->Roll;
+    telem->roket_totalAngle = sensor->total_angle;
+    HAL_UART_Transmit_DMA(huart, (uint8_t*)telem, sizeof(Telemetri_data));
+}
